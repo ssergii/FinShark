@@ -15,11 +15,17 @@ public class StockController : ControllerBase
 {
     #region fields
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IStockMapper _mapper;
     #endregion
 
     #region constructors
-    public StockController(IUnitOfWork unitOfWork) =>
+    public StockController(
+        IUnitOfWork unitOfWork,
+        IStockMapper mapper)
+    {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
+    }
     #endregion
 
     #region end points
@@ -29,7 +35,7 @@ public class StockController : ControllerBase
         try
         {
             var stocks = await _unitOfWork.StockRepository.GetAsync($"{nameof(Stock.Comments)}");
-            var stockReadCollection = stocks.ToStockReadCollection();
+            var stockReadCollection = _mapper.ToStockReadCollection(stocks);
 
             return Ok(stockReadCollection);
         }
@@ -50,7 +56,7 @@ public class StockController : ControllerBase
             if (stock == null)
                 return NotFound();
 
-            var stockRead = stock.ToStockRead();
+            var stockRead = _mapper.ToStockRead(stock);
 
             return Ok(stockRead);
         }
@@ -80,9 +86,9 @@ public class StockController : ControllerBase
                 includeProperties: $"{nameof(Stock.Comments)}");
 
             // var stocks = await _unitOfWork.StockRepository.GetAsync(
-                // includeProperties: $"{nameof(Stock.Comments)}");
+            // includeProperties: $"{nameof(Stock.Comments)}");
 
-            var stockReadCollection = stocks.ToStockReadCollection();
+            var stockReadCollection = _mapper.ToStockReadCollection(stocks); // stocks.ToStockReadCollection();
 
             return Ok(stockReadCollection);
         }
@@ -100,13 +106,13 @@ public class StockController : ControllerBase
 
         try
         {
-            var stock = dto.ToStock();
+            var stock = _mapper.ToStock(dto);
             if (stock == null)
                 return BadRequest("Invalid stock data.");
 
             await _unitOfWork.StockRepository.CreateAsync(stock);
 
-            var stockRead = stock.ToStockRead();
+            var stockRead = _mapper.ToStockRead(stock);
             return CreatedAtAction(nameof(Get), new { id = stock.Id }, stockRead);
         }
         catch (Exception ex)
@@ -127,10 +133,10 @@ public class StockController : ControllerBase
             if (stock == null)
                 return NotFound();
 
-            stock.Update(dto);
+            _mapper.Update(stock, dto);
             await _unitOfWork.StockRepository.UpdateAsync();
 
-            var stockRead = stock.ToStockRead();
+            var stockRead = _mapper.ToStockRead(stock);
             return Ok(stockRead);
         }
         catch (Exception ex)

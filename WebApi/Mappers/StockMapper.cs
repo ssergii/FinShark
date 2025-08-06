@@ -3,9 +3,9 @@ using WebApi.DTOs;
 
 namespace WebApi.Mappers;
 
-public static class StockMapper
+public class StockMapper : IStockMapper
 {
-    public static StockRead? ToStockRead(this Stock stock)
+    public StockRead? ToStockRead(Stock stock)
     {
         if (stock is null) return null;
 
@@ -24,17 +24,13 @@ public static class StockMapper
         return stockRead;
     }
 
-    public static IEnumerable<StockRead> ToStockReadCollection(this IEnumerable<Stock> stocks)
+    public IEnumerable<StockRead> ToStockReadCollection(IEnumerable<Stock> stocks)
     {
-        if (stocks is null || !stocks.Any())
-            return Enumerable.Empty<StockRead>();
-
-        var stockReadCollection = stocks.Select(stock => stock.ToStockRead());
-
-        return stockReadCollection;
+        foreach (var stock in stocks)
+            yield return ToStockRead(stock);
     }
 
-    public static Stock? ToStock(this StockCreate stockCreate)
+    public Stock? ToStock(StockCreate stockCreate)
     {
         if (stockCreate is null) return null;
 
@@ -51,7 +47,7 @@ public static class StockMapper
         return stock;
     }
 
-    public static Stock? ToStock(this StockUpdate stockUpdate)
+    public Stock? ToStock(StockUpdate stockUpdate)
     {
         if (stockUpdate is null) return null;
 
@@ -68,7 +64,7 @@ public static class StockMapper
         return stock;
     }
 
-    public static void Update(this Stock stock, StockUpdate stockUpdate)
+    public void Update(Stock stock, StockUpdate stockUpdate)
     {
         if (stock is null || stockUpdate is null) return;
 
