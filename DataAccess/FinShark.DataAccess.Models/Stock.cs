@@ -17,6 +17,6 @@ public class Stock
     public string Industry { get; set; } = string.Empty;
     public long MarketCap { get; set; }
 
-    // public ICollection<Portfolio>? Portfolios { get; set; }
     public ICollection<Comment>? Comments { get; set; }
+    public ICollection<Portfolio>? Portfolios { get; set; }
 }

@@ -113,7 +113,7 @@ namespace FinShark.DataAccess.EFDBContext.Migrations
 
                     b.HasIndex("StockId");
 
-                    b.ToTable("Comments");
+                    b.ToTable("Comments", (string)null);
                 });
 
             modelBuilder.Entity("FinShark.DataAccess.Models.Stock", b =>
@@ -147,7 +147,7 @@ namespace FinShark.DataAccess.EFDBContext.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Stocks");
+                    b.ToTable("Stocks", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
