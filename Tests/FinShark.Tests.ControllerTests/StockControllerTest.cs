@@ -1,4 +1,5 @@
-﻿using FakeItEasy;
+﻿using System.Linq.Expressions;
+using FakeItEasy;
 using FinShark.DataAccess.Interfaces;
 using FinShark.DataAccess.Models;
 using FinShark.WebApi.Controllers;
@@ -31,21 +32,22 @@ public class StockControllerTest
 
     #region tests
     [Fact]
-    public async Task StockController_Get_AllStocks_ReturnsOk()
+    public async Task StockController_Get_ReturnsOk()
     {
-        // Arrange
+        // arrange
+        var prop = nameof(Stock.Comments);
         var stocks = A.Fake<ICollection<Stock>>();
-        var dtoReadCollection = A.Fake<IEnumerable<StockRead>>();
+        var stockReadCollection = A.Fake<IEnumerable<StockRead>>();
 
-        A.CallTo(() => _unitOfWork.StockRepository.GetAsync($"{nameof(Stock.Comments)}"))
+        A.CallTo(() => _unitOfWork.StockRepository.GetAsync(prop))
             .Returns(Task.FromResult(stocks));
         A.CallTo(() => _mapper.ToStockReadCollection(stocks))
-            .Returns(dtoReadCollection);
+            .Returns(stockReadCollection);
 
-        // Act
+        // act
         var result = await _controller.Get();
 
-        // Assert
+        // assert
         result.Should().NotBeNull();
         result.Should().BeOfType<OkObjectResult>();
 
@@ -54,60 +56,128 @@ public class StockControllerTest
 
         var readCollection = okResult.Value as IEnumerable<StockRead>;
         readCollection.Should().NotBeNull();
-        readCollection.Should().BeEquivalentTo(dtoReadCollection);
+        readCollection.Should().BeEquivalentTo(stockReadCollection);
     }
 
     [Fact]
-    public async Task StockController_Get_SingleStockById_ReturnsOk()
+    public async Task StockController_Get_ById_ReturnsOk()
     {
-        // Arrange
+        // arrange
         var id = 1;
+        var prop = nameof(Stock.Comments);
         var stock = A.Fake<Stock>();
-        var dtoRead = A.Fake<StockRead>();
+        var stockRead = A.Fake<StockRead>();
 
-        A.CallTo(() => _unitOfWork.StockRepository.GetSingleByAsync(x => x.Id == id, $"{nameof(Stock.Comments)}"))
+        A.CallTo(() => _unitOfWork.StockRepository.GetSingleByAsync(A<Expression<Func<Stock, bool>>>._, prop))
             .Returns(Task.FromResult(stock));
         A.CallTo(() => _mapper.ToStockRead(stock))
-            .Returns(dtoRead);
+            .Returns(stockRead);
 
-        // Act
+        // act
         var result = await _controller.Get(id);
 
-        // Assert
+        // assert
         result.Should().NotBeNull();
         result.Should().BeOfType<OkObjectResult>();
 
         var okResult = result as OkObjectResult;
         okResult.Should().NotBeNull();
 
-        var stockRead = okResult.Value as StockRead;
-        stockRead.Should().BeEquivalentTo(dtoRead);
+        var dtoRead = okResult.Value as StockRead;
+        dtoRead.Should().BeEquivalentTo(stockRead);
     }
 
     [Fact]
     public async Task StockController_Create_RetutnActionResult()
     {
-        // Arrange
-        var dtoCreate = A.Fake<StockCreate>();
+        // arrange
+        var stockCreate = A.Fake<StockCreate>();
         var stock = A.Fake<Stock>();
-        var dtoRead = A.Fake<StockRead>();
+        var stockRead = A.Fake<StockRead>();
 
-        A.CallTo(() => _mapper.ToStock(dtoCreate)).Returns(stock);
+        A.CallTo(() => _mapper.ToStock(stockCreate)).Returns(stock);
         A.CallTo(() => _unitOfWork.StockRepository.CreateAsync(stock)).Returns(Task.CompletedTask);
-        A.CallTo(() => _mapper.ToStockRead(stock)).Returns(dtoRead);
+        A.CallTo(() => _mapper.ToStockRead(stock)).Returns(stockRead);
 
-        // Act
-        var result = await _controller.Create(dtoCreate);
+        // act
+        var result = await _controller.Create(stockCreate);
 
-        // Assert
+        // assert
         result.Should().BeOfType<CreatedAtActionResult>();
 
         var createdResult = result as CreatedAtActionResult;
         createdResult.Should().NotBeNull();
         createdResult.Value.Should().BeAssignableTo<StockRead>();
 
-        var stockRead = createdResult.Value as StockRead;
-        stockRead.Should().BeEquivalentTo(dtoRead);
+        var dtoRead = createdResult.Value as StockRead;
+        dtoRead.Should().BeEquivalentTo(stockRead);
+    }
+
+    [Fact]
+    public async Task StockController_Update_ReturnsOk()
+    {
+        // arange
+        var id = 1;
+        var prop = string.Empty;
+        var stockUpdate = A.Fake<StockUpdate>();
+        var stock = A.Fake<Stock>();
+        var stockRead = A.Fake<StockRead>();
+
+        A.CallTo(() => _unitOfWork.StockRepository.GetSingleByAsync(A<Expression<Func<Stock, bool>>>._, prop))
+            .Returns(stock);
+        A.CallTo(() => _mapper.Update(stock, stockUpdate));
+        A.CallTo(() => _unitOfWork.StockRepository.UpdateAsync()).Returns(Task.CompletedTask);
+        A.CallTo(() => _mapper.ToStockRead(stock)).Returns(stockRead);
+
+        // act
+        var result = await _controller.Update(id, stockUpdate);
+
+        // assert
+        result.Should().NotBeNull();
+        result.Should().BeOfType<OkObjectResult>();
+
+        var okResult = result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var dtoRead = okResult.Value as StockRead;
+        dtoRead.Should().NotBeNull();
+        dtoRead.Should().BeEquivalentTo(stockRead);
+    }
+
+    [Fact]
+    public async Task StockController_Delete_ReturnNoContent()
+    {
+        // arange
+        var id = 1;
+        var isDeleted = true;
+
+        A.CallTo(() => _unitOfWork.StockRepository.DeleteAsync(A<Expression<Func<Stock, bool>>>._))
+            .Returns(isDeleted);
+
+        // act
+        var result = await _controller.Delete(id);
+
+        // assert
+        result.Should().NotBeNull();
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task StockController_Delete_ReturnNotFound()
+    {
+        // arange
+        var id = 1;
+        var isDeleted = false;
+
+         A.CallTo(() => _unitOfWork.StockRepository.DeleteAsync(A<Expression<Func<Stock, bool>>>._))
+            .Returns(isDeleted);
+
+        // act
+        var result = await _controller.Delete(id);
+
+        // assert
+        result.Should().NotBeNull();
+        result.Should().BeOfType<NotFoundResult>();
     }
     #endregion
 }

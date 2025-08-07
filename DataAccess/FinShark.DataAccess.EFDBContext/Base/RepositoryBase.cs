@@ -27,7 +27,7 @@ public class RepositoryBase<TModel> : IRepositoryBase<TModel> where TModel : cla
             return await _dbSet.ToListAsync();
 
         IQueryable<TModel> query = _dbSet;
-        var properties = includeProperties.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        var properties = includeProperties.Split(';' , StringSplitOptions.RemoveEmptyEntries);
         foreach (var property in properties)
             query = query.Include(property);
 
@@ -40,7 +40,7 @@ public class RepositoryBase<TModel> : IRepositoryBase<TModel> where TModel : cla
             return await _dbSet.SingleAsync(expression);
 
         IQueryable<TModel> query = _dbSet;
-        var properties = includeProperties.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        var properties = includeProperties.Split(';' , StringSplitOptions.RemoveEmptyEntries);
         foreach (var property in properties)
             query = query.Include(property);
 
@@ -58,7 +58,7 @@ public class RepositoryBase<TModel> : IRepositoryBase<TModel> where TModel : cla
             return await _dbSet.ToListAsync();
 
         IQueryable<TModel> query = _dbSet;
-        var properties = includeProperties.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        var properties = includeProperties.Split(';' , StringSplitOptions.RemoveEmptyEntries);
         foreach (var property in properties)
             query = query.Include(property);
 
