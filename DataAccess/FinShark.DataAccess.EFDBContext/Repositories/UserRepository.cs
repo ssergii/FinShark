@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using FinShark.DataAccess.Interfaces;
+using FinShark.DataAccess.Interfaces.QueryParams;
 using FinShark.DataAccess.Models;
 using FinShark.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -73,24 +74,22 @@ public class UserRepository : IUserRepository
         throw new NotImplementedException();
     }
 
-    public Task<ICollection<User>> GetAsync(string? includeProperties = null)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICollection<User>> GetByAsync(Expression<Func<User, bool>>? expression = null, Expression<Func<User, string>>? keySelector = null, int pageNumber = 1, int pageSize = 5, string? includeProperties = null)
-    {
-        throw new NotImplementedException();
-    }
-
-
-
     public Task UpdateAsync()
     {
         throw new NotImplementedException();
     }
 
     public Task<User> GetSingleByAsync(Expression<Func<User, bool>> expression, string? includeProperties = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<ICollection<User>> GetByAsync(FilterParam filter, OrderParam order, PageParam page, string? includeProperties = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<ICollection<User>> GetAsync(FilterParam? filter = null, OrderParam? order = null, PageParam? page = null, string? includeProperties = null)
     {
         throw new NotImplementedException();
     }

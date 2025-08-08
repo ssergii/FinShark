@@ -1,7 +1,6 @@
-using System.Linq.Expressions;
 using FinShark.DataAccess.Interfaces;
+using FinShark.DataAccess.Interfaces.QueryParams;
 using FinShark.DataAccess.Models;
-using FinShark.WebApi.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.DTOs;
@@ -29,12 +28,20 @@ public class StockController : ControllerBase
     #endregion
 
     #region end points
-    [HttpGet]
-    public async Task<IActionResult> Get()
+    [HttpGet("query")]
+    public async Task<IActionResult> Get(
+        [FromQuery] FilterParam filter,
+        [FromQuery] OrderParam order,
+        [FromQuery] PageParam page)
     {
         try
         {
-            var stocks = await _unitOfWork.StockRepository.GetAsync($"{nameof(Stock.Comments)}");
+            var stocks = await _unitOfWork.StockRepository.GetAsync(
+                filter: filter.IsSet() ? filter : null,
+                order: order.IsSet() ? order : null,
+                page: page.IsSet() ? page : null,
+                includeProperties: $"{nameof(Stock.Comments)}");
+
             var stockReadCollection = _mapper.ToStockReadCollection(stocks);
 
             return Ok(stockReadCollection);
@@ -59,38 +66,6 @@ public class StockController : ControllerBase
             var stockRead = _mapper.ToStockRead(stock);
 
             return Ok(stockRead);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
-        }
-    }
-
-    [HttpGet("query")]
-    public async Task<IActionResult> GetBy(
-        [FromQuery] FilterParam filter,
-        [FromQuery] OrderParam order,
-        [FromQuery] PageParam page)
-    {
-        try
-        {
-            // var expression = filter.IsValid<Stock>() ? x => filter.Contains<Stock>(x) : x => true;
-            Expression<Func<Stock, bool>>? expression = x => filter.Contains(x);
-            Expression<Func<Stock, string>>? keySelector = x => order.Order<Stock>();
-
-            var stocks = await _unitOfWork.StockRepository.GetByAsync(
-                expression: x => filter.Contains(x),
-                keySelector : x => order.Order<Stock>(),
-                pageNumber: page.Number,
-                pageSize: page.Size,
-                includeProperties: $"{nameof(Stock.Comments)}");
-
-            // var stocks = await _unitOfWork.StockRepository.GetAsync(
-            // includeProperties: $"{nameof(Stock.Comments)}");
-
-            var stockReadCollection = _mapper.ToStockReadCollection(stocks); // stocks.ToStockReadCollection();
-
-            return Ok(stockReadCollection);
         }
         catch (Exception ex)
         {

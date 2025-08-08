@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using FinShark.DataAccess.Interfaces.Base;
+using FinShark.DataAccess.Interfaces.QueryParams;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinShark.DataAccess.EFDBContext.Base;
@@ -21,15 +22,58 @@ public class RepositoryBase<TModel> : IRepositoryBase<TModel> where TModel : cla
     #endregion
 
     #region methods
-    public virtual async Task<ICollection<TModel>> GetAsync(string? includeProperties = null)
-    {
-        if (string.IsNullOrEmpty(includeProperties))
-            return await _dbSet.ToListAsync();
+    // public virtual async Task<ICollection<TModel>> GetAsync(string? includeProperties = null)
+    // {
+    //     if (string.IsNullOrEmpty(includeProperties))
+    //         return await _dbSet.ToListAsync();
 
+    //     IQueryable<TModel> query = _dbSet;
+    //     var properties = includeProperties.Split(';', StringSplitOptions.RemoveEmptyEntries);
+    //     foreach (var property in properties)
+    //         query = query.Include(property);
+
+    //     return await query.ToListAsync();
+    // }
+
+    public async Task<ICollection<TModel>> GetAsync(
+        FilterParam? filter = null,
+        OrderParam? order = null,
+        PageParam? page = null,
+        string? includeProperties = null)
+    {
         IQueryable<TModel> query = _dbSet;
-        var properties = includeProperties.Split(';' , StringSplitOptions.RemoveEmptyEntries);
-        foreach (var property in properties)
-            query = query.Include(property);
+
+        if (filter != null)
+        {
+            var filterProp = GetPropName(filter.FilterBy);
+            if (!string.IsNullOrEmpty(filter.FilterBy))
+                query = _dbSet.Where(x => EF.Property<object>(x, filterProp).ToString().Contains(filter.Value));
+        }
+
+        if (order != null)
+        {
+            var orderProp = GetPropName(order.OrderBy);
+            if (!string.IsNullOrEmpty(orderProp))
+            {
+                if (order.IsDescending)
+                    query = query.OrderByDescending(x => EF.Property<object>(x, orderProp));
+                else
+                    query = query.OrderBy(x => EF.Property<object>(x, orderProp));
+            }
+        }
+
+        if (page != null)
+        {
+            var skipNumber = (page.PageNumber - 1) * page.PageSize;
+            query = query.Skip(skipNumber).Take(page.PageSize);
+        }
+
+        if (!string.IsNullOrEmpty(includeProperties))
+        {
+            var properties = includeProperties.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var property in properties)
+                query = query.Include(property);
+        }
 
         return await query.ToListAsync();
     }
@@ -40,42 +84,11 @@ public class RepositoryBase<TModel> : IRepositoryBase<TModel> where TModel : cla
             return await _dbSet.SingleAsync(expression);
 
         IQueryable<TModel> query = _dbSet;
-        var properties = includeProperties.Split(';' , StringSplitOptions.RemoveEmptyEntries);
+        var properties = includeProperties.Split(';', StringSplitOptions.RemoveEmptyEntries);
         foreach (var property in properties)
             query = query.Include(property);
 
         return await query.SingleAsync(expression);
-    }
-
-    public async Task<ICollection<TModel>> GetByAsync(
-        Expression<Func<TModel, bool>>? expression = null,
-        Expression<Func<TModel, string>>? keySelector = null,
-        int pageNumber = 1,
-        int pageSize = 5,
-        string? includeProperties = null)
-    {
-        if (string.IsNullOrEmpty(includeProperties))
-            return await _dbSet.ToListAsync();
-
-        IQueryable<TModel> query = _dbSet;
-        var properties = includeProperties.Split(';' , StringSplitOptions.RemoveEmptyEntries);
-        foreach (var property in properties)
-            query = query.Include(property);
-
-        if (expression != null)
-            query = query.Where(expression);
-        // if (keySelector != null)
-        //     query = query.OrderBy(keySelector);
-
-        // // ordering _dbSet
-        // var stocks = _dbSet.Where(x => EF.Property<string>(x, "PropName").Contains("AAPL"));
-        // stocks = stocks.OrderBy(x => EF.Property<object>(x, "PropName"));
-
-        // Apply pagination
-        // var skipNumber = (pageNumber - 1) * pageSize;
-        // query = query.Skip(skipNumber).Take(pageSize);
-
-        return await query.ToListAsync();
     }
 
     public async Task<bool> ExistsAsync(Expression<Func<TModel, bool>> expression)
@@ -88,5 +101,18 @@ public class RepositoryBase<TModel> : IRepositoryBase<TModel> where TModel : cla
     }
 
     protected async Task<int> SaveChangesAsync() => await _dbContext.SaveChangesAsync();
+    
+    private string? GetPropName(string propName)
+    {
+        if (string.IsNullOrEmpty(propName))
+            return null;
+
+        var prop = typeof(TModel).GetProperties()
+            .SingleOrDefault(x => x.Name.ToLower() == propName.ToLower());
+        if (prop == null)
+            throw new ArgumentException($"Property '{propName}' not found in model '{typeof(TModel).Name}'");
+
+        return prop.Name;
+    }
     #endregion
 }

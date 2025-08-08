@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using FakeItEasy;
 using FinShark.DataAccess.Interfaces;
+using FinShark.DataAccess.Interfaces.QueryParams;
 using FinShark.DataAccess.Models;
 using FinShark.WebApi.Controllers;
 using FluentAssertions;
@@ -35,17 +36,20 @@ public class StockControllerTest
     public async Task StockController_Get_ReturnsOk()
     {
         // arrange
+        var filter = A.Fake<FilterParam>();
+        var order = A.Fake<OrderParam>();
+        var page = A.Fake<PageParam>();
         var prop = nameof(Stock.Comments);
         var stocks = A.Fake<ICollection<Stock>>();
         var stockReadCollection = A.Fake<IEnumerable<StockRead>>();
 
-        A.CallTo(() => _unitOfWork.StockRepository.GetAsync(prop))
+        A.CallTo(() => _unitOfWork.StockRepository.GetAsync(filter, order, page, prop))
             .Returns(Task.FromResult(stocks));
         A.CallTo(() => _mapper.ToStockReadCollection(stocks))
             .Returns(stockReadCollection);
 
         // act
-        var result = await _controller.Get();
+        var result = await _controller.Get(filter, order, page);
 
         // assert
         result.Should().NotBeNull();
